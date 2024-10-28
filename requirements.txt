@@ -1,0 +1,4 @@
+azure_storage==0.37.0
+openai==1.52.2
+python_docx==0.8.11
+pywin32==305.1
