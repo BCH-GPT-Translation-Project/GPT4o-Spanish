@@ -1,7 +1,7 @@
 ---
 title: "Spanish Analysis"
 author: "Dan Kats and Mondira Ray"
-date: "2024-08-22"
+date: "2024-10-30"
 output: html_document
 ---
 
@@ -20,6 +20,7 @@ library(grid)
 ```
 
 # Data loading and processing
+Files are organized as folders named by lingust/evaluator (e.g., "Linguist 1_DK"). Inside each of those folders, there are folders for each pair of translations with a DOCX containing both (human and GPT) translations and their error annotations and two XLSX scorecards with one for each of the translations.
 ```{r Data loading}
 # Get the linguists
 files <- list.files()
@@ -28,9 +29,9 @@ linguists <- grep("^Linguist", files, value = TRUE)
 linguists <- linguists[file.info(linguists)$isdir]
 print(linguists)
 
-# Get the key of which translations were GPT vs human
+# Get the key of which translations were GPT vs human (HT = Human Translation; GPT = GPT Translation)
 translation_key <- read_excel('Translation Units.xlsx')
-translation_key$unit <- sub("^[^-]*-", "", translation_key$`LL ID`)
+translation_key$unit <- sub("^[^-]*-", "", translation_key$ID)
 translation_key$HT <- gsub("[^0-9]", "", translation_key$HT)
 translation_key$GPT <- gsub("[^0-9]", "", translation_key$GPT)
 
@@ -106,12 +107,14 @@ APP <- DPI / MSV * RWC
 SF <- DPI/APP
 
 ## Calculations
-# Count errors
+# Count errors ("EC" = "Error Count")
 translations$EC_neutral <- sapply(translations$score_table, function(x) sum(x[2]))
 translations$EC_minor <- sapply(translations$score_table, function(x) sum(x[3]))
 translations$EC_major <- sapply(translations$score_table, function(x) sum(x[4]))
 translations$EC_critical <- sapply(translations$score_table, function(x) sum(x[5]))
 translations$EC_significant <- translations$EC_major + translations$EC_critical
+translations$EC_nonneutral <- translations$EC_minor + translations$EC_major + translations$EC_critical
+translations$EC_total <- translations$EC_neutral + translations$EC_minor + translations$EC_major + translations$EC_critical
 # Count error types
 errortypes <- as.data.frame(sapply(translations$score_table, function(x) rowSums(x[,-1])))
 rownames(errortypes) <- unlist(translations$score_table[[1]][,1])
@@ -155,8 +158,8 @@ background_data <- data.frame(
 )
 
 col_gpt = "#21908CFF"
-col_human = "#F1E51DFF"
-col_neutral = "#472D7BFF"
+col_neutral = "#F1E51DFF"
+col_human = "#472D7BFF"
 ```
 
 ```{r Bar plot of all ratings}
@@ -180,22 +183,49 @@ translations |>
 		) +
 		guides(fill = guide_legend(order = 1), color = guide_legend(order = 2))
 ```
-```{r Scatter plot of all ratings}
-translations |>
-	ggplot(aes(x = as.numeric(factor(unit)), y = CQS, color = label)) +
+```{r Scatter plot of all error counts}
+p <- translations |>
+	ggplot(aes(x = as.numeric(factor(unit)), y = EC_nonneutral, fill = label)) +
 		geom_rect(data = background_data, xmin = background_data$xmin, xmax = background_data$xmax, ymin = -Inf, ymax = Inf, fill = background_data$fill, inherit.aes = FALSE, alpha = 0.5) +
-		geom_point(position = position_dodge(width = 0.8), size = 3) +
-		geom_segment(inherit.aes = F, data = translations |> group_by(unit, label) |> summarize(mean_score = mean(CQS), .groups = 'drop') |>
-				  	mutate(xmin = as.numeric(factor(unit)) - 0.2, xmax = as.numeric(factor(unit)) + 0.2),
-					aes(x = xmin, xend = xmax, y = mean_score, yend = mean_score, color = label), linewidth = 1) +
-		labs(x = "Translation Unit", y = "MQM Score", color = NULL) +
-		scale_color_manual(values = c(col_gpt, col_human, col_neutral)) +
+		geom_point(position = position_dodge(width = 0.8), shape = 21, size = 3, color = "black", alpha = 0.8) +
+		labs(x = "Translation", y = "Number of Non-neutral Errors", fill = NULL, title = "Distribution of Non-neutral Errors by Translation") +
+		scale_fill_manual(values = c(col_gpt, col_human, col_neutral)) +
 		scale_x_continuous(breaks = unique(as.numeric(factor(translations$unit)))) +
 		theme_bw() +
 		theme(
 			panel.grid.major.x = element_blank(),
-			panel.grid.minor.x = element_blank()
+			panel.grid.minor.x = element_blank(),
+			plot.title = element_text(hjust = 0.5, size = 18),
+			axis.title.x = element_text(size = 14),
+			axis.title.y = element_text(size = 14),
+			legend.text = element_text(size = 14)
 		)
+p
+ggsave("error-distribution.png", plot = p, width = 10, height = 4, dpi = 1200)
+```
+
+```{r Scatter plot of all scores}
+p <- translations |>
+	ggplot(aes(x = as.numeric(factor(unit)), y = CQS, fill = label)) +
+		geom_rect(data = background_data, xmin = background_data$xmin, xmax = background_data$xmax, ymin = -Inf, ymax = Inf, fill = background_data$fill, inherit.aes = FALSE, alpha = 0.5) +
+		geom_point(position = position_dodge(width = 0.8), shape = 21, size = 3, color = "black", alpha = 0.8) +
+		# geom_segment(inherit.aes = F, data = translations |> group_by(unit, label) |> summarize(mean_score = mean(CQS), .groups = 'drop') |>
+		# 		  	mutate(xmin = as.numeric(factor(unit)) - 0.2, xmax = as.numeric(factor(unit)) + 0.2),
+		# 			aes(x = xmin, xend = xmax, y = mean_score, yend = mean_score, color = label), linewidth = 1) +
+		labs(x = "Translation", y = "MQM Score", fill = NULL, title = "Distribution of MQM Scores by Translation") +
+		scale_fill_manual(values = c(col_gpt, col_human, col_neutral)) +
+		scale_x_continuous(breaks = unique(as.numeric(factor(translations$unit)))) +
+		theme_bw() +
+		theme(
+			panel.grid.major.x = element_blank(),
+			panel.grid.minor.x = element_blank(),
+			plot.title = element_text(hjust = 0.5, size = 18),
+			axis.title.x = element_text(size = 14),
+			axis.title.y = element_text(size = 14),
+			legend.text = element_text(size = 14)
+		)
+p
+ggsave("score-distribution.png", plot = p, width = 10, height = 4, dpi = 1200)
 ```
 ```{r Histogram of preferences, message=FALSE, warning=FALSE}
 preference_labels = c("Strongly Prefer Human", "Prefer Human", "Neutral", "Prefer GPT", "Strongly Prefer GPT")
@@ -214,7 +244,7 @@ p <- translations |>
 		scale_fill_manual(values = c(col_gpt, col_human, col_neutral)) +
 		scale_y_continuous(breaks = function(x) pretty(x, n = 4, min.n = 1)) +
 		theme_bw() +
-		theme(legend.position = "none")
+		theme(legend.position = "none", text = element_text(size = 12))
 p
 ggsave("preference.png", plot = p, width = 7, height = 4, dpi = 1200)
 ```
@@ -266,6 +296,15 @@ ggsave("preference_distribution.png", plot = p, width = 6, height = 3, dpi = 120
 ```
 
 ```{r Comparison of preference rankings and scores, warning=FALSE}
+preference_score_model <- translations |> 
+	group_by(unit, linguist) |> 
+	mutate(CQS_diff = ifelse(is.na(lead(CQS)), CQS - lag(CQS), CQS - lead(CQS))) |> 
+	ungroup() |> 
+	filter(label == "GPT") |> 
+	(\(data) lm(CQS_diff ~ preference, data = data))() |> 
+	summary()
+preference_score_model$r.squared
+
 translations |> 
 	group_by(unit, linguist) |> 
 	mutate(CQS_diff = ifelse(is.na(lead(CQS)), CQS - lag(CQS), CQS - lead(CQS))) |> 
@@ -306,7 +345,7 @@ p <- translations |>
 		labs(x = NULL, y = "MQM Score", fill = NULL) +
 		scale_fill_manual(values = c(col_gpt, col_human)) +
 		theme_bw() +
-		theme(legend.position = "none")
+		theme(legend.position = "none", text = element_text(size = 20))
 p
 ggsave("overall_comparison.png", plot = p, width = 4, height = 4, dpi = 1200)
 ```
@@ -337,21 +376,45 @@ radar_data <- translations |>
 	"             Culturally insensitive" = mean(unit_mean_insensitive), sd_insensitive = sd(unit_mean_insensitive)
 	)
 radar_means <- radar_data |> select(-contains("sd")) |> select(-"label")
-radar_table <- as.data.frame(rbind(rep(ceiling(max(radar_means)), ncol(radar_means)), rep(0, ncol(radar_means)), radar_means))
-rownames(radar_table) <- c("Min", "Max", radar_data$label)
+
+# Number of errors per translation unit
+# radar_table <- as.data.frame(rbind(rep(ceiling(max(radar_means)), ncol(radar_means)), rep(0, ncol(radar_means)), radar_means))
+
+# Proportion of errors (out of total number of errors)
+radar_table <- as.data.frame(rbind(rep(round(max(radar_means * 100/sum(radar_means)) / 20) * 20, ncol(radar_means)), rep(0, ncol(radar_means)), radar_means * 100/sum(radar_means)))
+
+rownames(radar_table) <- c("Max", "Min", radar_data$label)
 png("radar_chart.png", width = 6400, height = 4800, res = 1200)
+labels <- paste0(seq(0,radar_table[1,1],20), "%")
 radarchart(radar_table,
 		pcol=sapply(c(col_gpt, col_human), adjustcolor, alpha = 0.9),
 		pfcol=sapply(c(col_gpt, col_human), adjustcolor, alpha = 0.3),
 		plty = 1, cglty=1,
 		vlcex = 0.7,
-		title="Incidence of Error Types (per Translation Unit)",
-		seg = ceiling(max(radar_means)),
-		axistype = 1,
+		title="Proportion of All Error Types",
+		seg = 3,
+		axistype = 0,
 		cglcol="grey", axislabcol="grey45",
-		caxislabels = seq(0,ceiling(max(radar_means))),
-		calcex = 0.70)
+		calcex = 0.6)
+text(
+  x = 0.0275,
+  y = seq(0,1,0.25)[-1] + 0.05,
+  labels = labels,
+  adj = c(0, 0.5),
+  col = "white",
+  cex = 0.625,
+  font = 2
+)
+text(
+  x = 0.03,
+  y = seq(0,1,0.25)[-1] + 0.05,
+  labels = labels,
+  adj = c(0, 0.5),
+  col = "grey45",
+  cex = 0.6
+)
 legend(x=-2.5, y=-0.05, legend = rownames(radar_table[-c(1,2),]), bty = "n", pch=15, col=c(col_gpt, col_human, col_neutral), cex=1.1, pt.cex=2)
+# theme(text = element_text(size = 12))
 dev.off()
 ```
 
@@ -367,8 +430,8 @@ equivtesting <- translations |>
 # Calculate the CIs
 equivtesting_ci <- equivtesting |> 
 	summarise(n = length(unique(unit)), 
-			  mean_diffRQS = mean(meandiffRQS), sd_diffRQS = sd(meandiffRQS), ciRQS = list(t.test(meandiffRQS, conf.level = 0.90)), 
-			  mean_diffCQS = mean(meandiffCQS), sd_diffCQS = sd(meandiffCQS), ciCQS = list(t.test(meandiffCQS, conf.level = 0.90)))
+			  mean_diffRQS = mean(meandiffRQS), sd_diffRQS = sd(meandiffRQS), ciRQS = list(t.test(meandiffRQS, conf.level = 0.95)), 
+			  mean_diffCQS = mean(meandiffCQS), sd_diffCQS = sd(meandiffCQS), ciCQS = list(t.test(meandiffCQS, conf.level = 0.95)))
 # Print the CIs for RQS and CQS
 equivtesting_ci$ciRQS[[1]]
 equivtesting_ci$ciCQS[[1]]
@@ -384,16 +447,16 @@ p <- ggplot(data = equivtesting_ci, aes(x = mean_diffCQS, y = n)) +
 	geom_vline(xintercept=0) +
 	geom_point(size=6, shape=15) +
 	geom_errorbarh(aes(xmin = ci$conf.int[1], xmax = ci$conf.int[2]), height = 0.2, linewidth = 1) +
-	labs(y = "", x = "Difference: GPT score – Human score", title = "Calibrated Quality Score") +
-	annotate("text", x = 0, y = equivtesting_ci$n-1, hjust = 1.1, label = "Human score > GPT score", color = "gray55", size = 3.5) +
-	annotate("text", x = 0, y = equivtesting_ci$n-1, hjust = -0.1, label = "GPT score > Human score", color = "gray55", size = 3.5) +
-	annotate("text", x = equivregion[1], y = equivtesting_ci$n-1, hjust = -0.1, vjust = 1.8, angle = 90, label = "Non-inferiority margin", color = "gray55", size = 3.5) +
-	annotate("text", x = equivregion[2], y = equivtesting_ci$n-1, hjust = -0.2, vjust = -1.0, angle = 90, label = "Superiority margin", color = "gray55", size = 3.5) +
+	labs(y = "", x = "Difference: GPT score – Human score", title = "") +
+	annotate("text", x = 0, y = equivtesting_ci$n-0.9, hjust = 1.1, label = "Human score > GPT score", color = "gray25", size = 4) +
+	annotate("text", x = 0, y = equivtesting_ci$n-0.9, hjust = -0.1, label = "GPT score > Human score", color = "gray25", size = 4) +
+	annotate("text", x = equivregion[1], y = equivtesting_ci$n-1, hjust = -0.1, vjust = 1.8, angle = 90, label = "Non-inferiority margin", color = "gray25", size = 3) +
+	annotate("text", x = equivregion[2], y = equivtesting_ci$n-1, hjust = -0.2, vjust = -1.0, angle = 90, label = "Superiority margin", color = "gray25", size = 3) +
 	expand_limits(x = c(-2.5, 2.5)) + 
 	scale_y_continuous(limits = c(equivtesting_ci$n-1,equivtesting_ci$n+1)) +
 	scale_fill_manual(values = c("Equivalence area" = "red")) +
 	theme_minimal() +
-	theme(axis.ticks.y = element_blank(), axis.text.y = element_blank(), panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(), axis.line.x = element_line(color = "black"), plot.title = element_text(hjust=0.5), legend.title = element_blank())
+	theme(axis.ticks.y = element_blank(), axis.text.y = element_blank(), panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank(), axis.line.x = element_line(color = "black"), plot.title = element_text(hjust=0.5), legend.title = element_blank(), text = element_text(size = 17))
 p
 ggsave("CQS_forest.png", plot = p, width = 8, height = 2.5, dpi = 600, bg = "white")
 ```
@@ -402,20 +465,27 @@ ggsave("CQS_forest.png", plot = p, width = 8, height = 2.5, dpi = 600, bg = "whi
 translations_paired <- translations |>
 	select(c('unit', 'linguist', 'CQS', 'label')) |>
 	pivot_wider(names_from = label, values_from = CQS)
-t.test(translations_paired$Human, translations_paired$GPT, paired=TRUE, alternative = "less")
+t.test(translations_paired$Human, translations_paired$GPT, paired=TRUE, alternative = "two.sided", conf.level = 0.95)
 
-translations_paired <- translations |>
-	select(c('unit', 'linguist', 'EC_critical', 'label')) |>
-	pivot_wider(names_from = label, values_from = EC_critical)
-t.test(translations_paired$Human, translations_paired$GPT, paired=TRUE, alternative = "less")
-
-translations_paired <- translations |>
-	select(c('unit', 'linguist', 'EC_significant', 'label')) |>
-	pivot_wider(names_from = label, values_from = EC_significant)
-t.test(translations_paired$Human, translations_paired$GPT, paired=TRUE, alternative = "less")
+ec_columns <- names(translations)[startsWith(names(translations), "EC_")]
+ttest_results <- lapply(ec_columns, function(col_name) {
+  translations_paired <- translations |>
+    select(c('unit', 'linguist', all_of(col_name), 'label')) |> 
+    group_by(unit, label) |> 
+    summarise(mean = mean(!!sym(col_name)), .groups = 'drop') |> 
+    pivot_wider(names_from = label, values_from = mean)
+  print(paste("****************", col_name, "****************"))
+  print(paste("Human:", mean(translations_paired$Human), sd(translations_paired$Human)))
+  print(paste("GPT:", mean(translations_paired$GPT), sd(translations_paired$GPT)))
+  print(t.test(translations_paired$Human, translations_paired$GPT, paired = TRUE, alternative = "two.sided", conf.level = 0.95))
+})
+# names(ttest_results) <- ec_columns
+# ttest_results
 
 prop.test(c(sum(translations$preference[translations$label == "GPT"] > 0), sum(translations$preference[translations$label == "GPT"] < 0)),
-		  c(length(translations$preference[translations$label == "GPT"] > 0), length(translations$preference[translations$label == "GPT"] < 0)), alternative = 'less')
+		  c(length(translations$preference[translations$label == "GPT"] > 0), length(translations$preference[translations$label == "GPT"] < 0)))
+
+rateratio(sum(translations$EC_mistranslation[translations$label == "Human"]), sum(translations$EC_mistranslation[translations$label == "GPT"]), length(translations$EC_mistranslation[translations$label == "Human"]), length(translations$EC_mistranslation[translations$label == "GPT"]))
 ```
 
 ```{r Intraclass Correlation Coefficient}
