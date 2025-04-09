@@ -430,8 +430,8 @@ equivtesting <- translations |>
 # Calculate the CIs
 equivtesting_ci <- equivtesting |> 
 	summarise(n = length(unique(unit)), 
-			  mean_diffRQS = mean(meandiffRQS), sd_diffRQS = sd(meandiffRQS), ciRQS = list(t.test(meandiffRQS, conf.level = 0.95)), 
-			  mean_diffCQS = mean(meandiffCQS), sd_diffCQS = sd(meandiffCQS), ciCQS = list(t.test(meandiffCQS, conf.level = 0.95)))
+			  mean_diffRQS = mean(meandiffRQS), sd_diffRQS = sd(meandiffRQS), ciRQS = list(t.test(meandiffRQS, conf.level = 0.90)), 
+			  mean_diffCQS = mean(meandiffCQS), sd_diffCQS = sd(meandiffCQS), ciCQS = list(t.test(meandiffCQS, conf.level = 0.90)))
 # Print the CIs for RQS and CQS
 equivtesting_ci$ciRQS[[1]]
 equivtesting_ci$ciCQS[[1]]
