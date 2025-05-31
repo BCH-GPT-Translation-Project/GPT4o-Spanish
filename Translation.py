@@ -15,7 +15,7 @@ azure_endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
 # Initialize the AzureOpenAI client
 client = AzureOpenAI(
     api_key=api_key,
-    api_version="2024-02-01",
+    api_version="2024-05-13",
     azure_endpoint=azure_endpoint
 )
 
