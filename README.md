@@ -1,9 +1,10 @@
 # GPT4o-Spanish
 
-_Establishing a Standardized Approach for Evaluating Large Language Model Translations of Patient Instructions_
+_Evaluating a Large Language Model in Translating Patient Instructions to Spanish Using a Standardized Framework_
+[doi:10.1001/jamapediatrics.2025.1729](http://doi.org/10.1001/jamapediatrics.2025.1729)
 
 Authors:  
-Mondira Ray, MD*; Daniel J. Kats, MD*; Joss Moorkens, PhD; Dinesh Rai, MD; Nate Shaar; Diane Quinones, MS, RN, CPNP; Alejandro Vermeulen, BFA, CMI; Camila M. Mateo, MD, MPH; Ryan C. L. Brewster, MD; Alisa Khan, MD, MPH; Benjamin Rader, PhD; John S. Brownstein, PhD; Jonathan D. Hron, MD  
+Mondira Ray, MD, MBI*; Daniel J. Kats, MD, MBI*; Joss Moorkens, PhD; Dinesh Rai, MD; Nate Shaar; Diane Quinones, MS, RN, CPNP; Alejandro Vermeulen, BFA, CMI; Camila M. Mateo, MD, MPH; Ryan C. L. Brewster, MD; Alisa Khan, MD, MPH; Benjamin Rader, PhD; John S. Brownstein, PhD; Jonathan D. Hron, MD  
 *Contributed equally as first-authors
 
 Corresponding authors:  
@@ -13,6 +14,7 @@ Daniel J. Kats, MD: daniel.kats@childrens.harvard.edu
 
 ## Prerequisites
 ### Python
+* Python 3.11.5
 * Python package versions are listed in [requirements.txt](requirements.txt)
 * Store OpenAI API Key as environmental variable `AZURE_OPENAI_API_KEY`
 * Store OpenAI API endpoint as environmental variable `AZURE_OPENAI_ENDPOINT`
