@@ -70,7 +70,6 @@ R package versions are as follows:
 1. Output: data via `translation_scores.csv` and several `png` images of figures
 
 ## License
-All contents of this repository are made available under the  
+This repository is licensed under the  
 [Creative Commons Attribution-NonCommercial 4.0 International License](./LICENSE.md).  
-
-You are free to use, share, and adapt this work for research and educational purposes with proper attribution. **Commercial use is not permitted.**
+Please cite the article (doi:10.1001/jamapediatrics.2025.1729) if you use this work.
