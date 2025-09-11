@@ -68,3 +68,9 @@ R package versions are as follows:
 1. Set MQM parameters as desired in lines 90, 92, 94, 98, 101
 1. Script should run if correct libraries are installed and file structure is as specified above
 1. Output: data via `translation_scores.csv` and several `png` images of figures
+
+## License
+All contents of this repository are made available under the  
+[Creative Commons Attribution-NonCommercial 4.0 International License](./LICENSE.md).  
+
+You are free to use, share, and adapt this work for research and educational purposes with proper attribution. **Commercial use is not permitted.**
