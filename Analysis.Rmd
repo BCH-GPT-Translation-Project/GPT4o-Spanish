@@ -392,13 +392,13 @@ radarchart(radar_table,
 		plty = 1, cglty=1,
 		vlcex = 0.7,
 		title="Proportion of All Error Types",
-		seg = 3,
+		seg = length(labels)-1,
 		axistype = 0,
 		cglcol="grey", axislabcol="grey45",
 		calcex = 0.6)
 text(
-  x = 0.0275,
-  y = seq(0,1,0.25)[-1] + 0.05,
+  x = 0.0375,
+  y = seq(0.35,1,length.out=length(labels)) + 0.05,
   labels = labels,
   adj = c(0, 0.5),
   col = "white",
@@ -406,8 +406,8 @@ text(
   font = 2
 )
 text(
-  x = 0.03,
-  y = seq(0,1,0.25)[-1] + 0.05,
+  x = 0.04,
+  y = seq(0.35,1,length.out=length(labels)) + 0.05,
   labels = labels,
   adj = c(0, 0.5),
   col = "grey45",
@@ -524,3 +524,4 @@ print(icc_human)
 icc_GPT <- ICC(df_GPT_wide[, -c(1:3)])
 print(icc_GPT)
 ```
+
